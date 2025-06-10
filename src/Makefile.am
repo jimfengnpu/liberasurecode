@@ -1,4 +1,4 @@
-SUBDIRS = builtin/xor_codes builtin/null_code builtin/rs_vand
+SUBDIRS = builtin/xor_codes builtin/null_code builtin/rs_vand builtin/gpu_rscode
 
 lib_LTLIBRARIES = liberasurecode.la
 
@@ -7,7 +7,8 @@ INCLUDE = \
 		-I$(abs_top_srcdir)/include/xor_codes \
 		-I$(abs_top_srcdir)/include/rs_vand \
 		-I$(abs_top_srcdir)/include/isa_l \
-		-I$(abs_top_srcdir)/include/shss
+		-I$(abs_top_srcdir)/include/shss \
+		-I$(abs_top_srcdir)/include/gpu_rscode
 
 AM_CPPFLAGS = $(CPPFLAGS) $(INCLUDE)
 AM_CFLAGS = $(AM_CPPFLAGS)
@@ -29,13 +30,15 @@ liberasurecode_la_SOURCES = \
 		backends/isa-l/isa_l_rs_cauchy.c \
 		backends/rs_vand/liberasurecode_rs_vand.c \
 		backends/shss/shss.c \
-		backends/phazrio/libphazr.c
+		backends/phazrio/libphazr.c \
+		backends/gpu_rscode/gpu_rscode.c
 
 liberasurecode_la_CPPFLAGS = -Werror @GCOV_FLAGS@
 liberasurecode_la_LIBADD = \
 		builtin/null_code/libnullcode.la \
 		builtin/xor_codes/libXorcode.la \
 		builtin/rs_vand/liberasurecode_rs_vand.la \
+		builtin/gpu_rscode/libgpu_rscode.la	\
 		-lpthread -lm -lz @GCOV_LDFLAGS@
 
 # Version format  (C - A).(A).(R) for C:R:A input

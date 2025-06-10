@@ -81,6 +81,12 @@ AC_CONFIG_HEADER(include/config_liberasurecode.h)
 
 AX_EXT()
 
+# Checks for libraries.
+AC_CHECK_LIB([m], [pow])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_SIZE_T
+
 ################################################################################
 #                             System Headers
 ################################################################################
@@ -90,7 +96,7 @@ AC_CHECK_HEADERS(sys/types.h stdio.h stdlib.h stddef.h stdarg.h \
                  malloc.h memory.h string.h strings.h inttypes.h \
                  stdint.h ctype.h iconv.h signal.h dlfcn.h \
                  pthread.h unistd.h limits.h errno.h syslog.h)
-AC_CHECK_FUNCS(malloc calloc realloc free openlog)
+AC_CHECK_FUNCS(malloc calloc realloc free openlog pow)
 
 #################################################################################
 #                             Debug/coverage Options
@@ -119,10 +125,12 @@ if test x$debug = xtrue ; then
     DEBUG=1
     CXXFLAGS=""
     CFLAGS="-O0 -ggdb -g3 ${werror_flag} -D_GNU_SOURCE=1 -Wall -Wstrict-prototypes -pedantic -std=c99 ${CFLAGS}"
+    NVCCFLAGS="-G -g -O0 --ptxas-options=-v"
 else
     DEBUG=0
     CXXFLAGS=""
     CFLAGS="-O2 -g ${werror_flag} -D_GNU_SOURCE=1 -Wall -Wstrict-prototypes -pedantic -std=c99 ${CFLAGS}"
+    NVCCFLAGS="-O3 -use_fast_math --ptxas-options=-v"
 fi
 
 AC_ARG_ENABLE([gcov],
@@ -235,6 +243,42 @@ if test "$ac_cv_sizeof_long" -eq 8; then
   AC_MSG_RESULT([Adding -DARCH_64 to CFLAGS])
 fi
 
+#find out what version we are running
+ARCH=`uname -m`
+if [[ $ARCH == "x86_64" ]];
+then
+  SUFFIX="64"
+else
+  SUFFIX=""
+fi
+
+# Setup CUDA paths
+# ------------------------------------------------------------------------------
+AC_ARG_WITH([cuda],
+   [  --with-cuda=PATH     prefix where cuda is installed [default=auto]])
+if test -n "$with_cuda"
+then
+   CUDA_CFLAGS="-I$with_cuda/include"
+   CUDA_LIBS="-L$with_cuda/lib$SUFFIX"
+   CUDA_LDFLAGS="-L$with_cuda/lib$SUFFIX"
+   NVCC="$with_cuda/bin/nvcc"
+else
+   CUDA_CFLAGS="-I/usr/local/cuda/include"
+   CUDA_LIBS="-L/usr/local/cuda/lib$SUFFIX"
+   CUDA_LDFLAGS="-L/usr/local/cuda/lib$SUFFIX"
+   NVCC="nvcc"
+fi
+
+AC_SUBST(CUDA_CFLAGS)
+AC_SUBST(CUDA_LIBS)
+AC_SUBST(NVCC)
+AC_SUBST(NVCCFLAGS)
+
+#Check for CUDA libraries
+save_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS $CUDA_LDFLAGS"
+AC_CHECK_LIB([cudart], [cudaMalloc])
+LDFLAGS="$save_LDFLAGS"
 
 #################################################################################
 #                             Doxygen Documentation
@@ -267,6 +311,7 @@ AC_CONFIG_FILES([\
     src/builtin/null_code/Makefile \
     src/builtin/xor_codes/Makefile \
     src/builtin/rs_vand/Makefile \
+    src/builtin/gpu_rscode/Makefile \
     src/Makefile \
     test/Makefile \
     doc/Makefile \

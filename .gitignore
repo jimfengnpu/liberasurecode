@@ -53,6 +53,9 @@ install-sh
 libtool
 ltmain.sh
 
+# vscode
+.vscode/
+
 # doxygen documentation
 ^doc/.*\.doxytag
 ^doc/html
