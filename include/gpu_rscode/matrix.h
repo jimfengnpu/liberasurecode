@@ -99,7 +99,6 @@ __host__ float decode_chunk(unsigned char *dataChunk, unsigned char *parityCoeff
 #ifdef __cplusplus
 extern "C" {
 #endif
-void GPU_generate_encode_matrix(uint8_t *encodingMatrix, int nativeBlockNum, int parityBlockNum);
 void GPU_invert_matrix(uint8_t *matrix_dev, uint8_t *result_dev, int size);
 #ifdef __cplusplus
 }

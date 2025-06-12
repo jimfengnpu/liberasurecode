@@ -15,11 +15,11 @@
  *
  * =====================================================================================
  */
-#include "matrix.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "helper_cuda.h"
+#include <matrix.h>
+#include <helper_cuda.h>
 
 const int gf_width = 8;
 const int field_size = 1 << 8;
@@ -756,24 +756,6 @@ __global__ void gen_encoding_matrix(uint8_t *encodingMatrix, int row, int col)
     setup_tables();
     __syncthreads();
     encodingMatrix[i * col + j] = gf_pow((j + 1) % field_size, i);
-}
-
-extern "C"
-void GPU_generate_encode_matrix(uint8_t *encodingMatrix, int nativeBlockNum, int parityBlockNum) {
-    uint8_t *encodingMatrix_d;	//device
-    int matrixSize = parityBlockNum * nativeBlockNum * sizeof(uint8_t);
-    checkCudaErrors(cudaMalloc((void **)&encodingMatrix_d, matrixSize));
-
-    // record event
-    const int maxBlockDimSize = 16;
-    int blockDimX = min(parityBlockNum, maxBlockDimSize);
-    int blockDimY = min(nativeBlockNum, maxBlockDimSize);
-    int gridDimX = (int) ceil((float) parityBlockNum / blockDimX);
-    int gridDimY = (int) ceil((float) nativeBlockNum / blockDimY);
-    dim3 grid(gridDimX, gridDimY);
-    dim3 block(blockDimX, blockDimY);
-    gen_encoding_matrix<<<grid, block>>>(encodingMatrix_d, parityBlockNum, nativeBlockNum);
-    checkCudaErrors(cudaMemcpy(encodingMatrix, encodingMatrix_d, matrixSize, cudaMemcpyDeviceToHost));
 }
 
 /*

@@ -130,12 +130,6 @@ static void* GPU_thread_func(void * args)
     ThreadDataType* thread_data = (ThreadDataType *) args;
     checkCudaErrors(cudaSetDevice(thread_data->id));
 
-    int parityBlockNum = thread_data->parityBlockNum;
-    int nativeBlockNum = thread_data->nativeBlockNum;
-    int matrixSize = parityBlockNum * nativeBlockNum * sizeof(uint8_t);
-    // NOTE: Pageable Host Memory is preferred here since the encodingMatrix is small
-    // cudaMallocHost((void **)&encodingMatrix, matrixSize);
-
     struct timespec start, end;
     pthread_barrier_wait(&barrier);
     clock_gettime(CLOCK_REALTIME, &start);
@@ -201,7 +195,10 @@ void encode_data(uint8_t *generator_matrix, uint8_t **dataBuf, uint8_t **codeBuf
 
     uint8_t *dataBufPerDevice[GPU_num];
     uint8_t *codeBufPerDevice[GPU_num];
-
+    uint8_t *encodingMatrx;
+    size_t matrixSize = nativeBlockNum*parityBlockNum*sizeof(uint8_t);
+    checkCudaErrors(cudaMallocHost((void **)&encodingMatrx, matrixSize));
+    checkCudaErrors(cudaMemcpy(encodingMatrx, generator_matrix, matrixSize, cudaMemcpyHostToHost));
     pthread_barrier_init(&barrier, NULL, GPU_num);
 
     int minChunkSizePerDevice = chunkSize / GPU_num;
@@ -235,7 +232,7 @@ void encode_data(uint8_t *generator_matrix, uint8_t **dataBuf, uint8_t **codeBuf
         }
         thread_data[i].dataBuf = dataBufPerDevice[i];
         thread_data[i].codeBuf = codeBufPerDevice[i];
-        thread_data[i].encodingMatrix = generator_matrix;
+        thread_data[i].encodingMatrix = encodingMatrx;
 
         pthread_create(&((pthread_t*) threads)[i], NULL, GPU_thread_func, (void *) &thread_data[i]);
     }
@@ -267,6 +264,25 @@ void encode_data(uint8_t *generator_matrix, uint8_t **dataBuf, uint8_t **codeBuf
     }
 
     pthread_barrier_destroy(&barrier);
+    checkCudaErrors(cudaFreeHost(encodingMatrx));
     checkCudaErrors(cudaDeviceReset());
 
+}
+
+extern "C"
+void GPU_generate_encode_matrix(uint8_t *encodingMatrix, int nativeBlockNum, int parityBlockNum) {
+    uint8_t *encodingMatrix_d;	//device
+    int matrixSize = parityBlockNum * nativeBlockNum * sizeof(uint8_t);
+    checkCudaErrors(cudaMalloc((void **)&encodingMatrix_d, matrixSize));
+
+    // record event
+    const int maxBlockDimSize = 16;
+    int blockDimX = min(parityBlockNum, maxBlockDimSize);
+    int blockDimY = min(nativeBlockNum, maxBlockDimSize);
+    int gridDimX = (int) ceil((float) parityBlockNum / blockDimX);
+    int gridDimY = (int) ceil((float) nativeBlockNum / blockDimY);
+    dim3 grid(gridDimX, gridDimY);
+    dim3 block(blockDimX, blockDimY);
+    gen_encoding_matrix<<<grid, block>>>(encodingMatrix_d, parityBlockNum, nativeBlockNum);
+    checkCudaErrors(cudaMemcpy(encodingMatrix, encodingMatrix_d, matrixSize, cudaMemcpyDeviceToHost));
 }

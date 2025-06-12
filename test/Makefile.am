@@ -1,5 +1,5 @@
 noinst_HEADERS = builtin/xor_codes/test_xor_hd_code.h
-noinst_PROGRAMS = test_xor_hd_code alg_sig_test liberasurecode_test libec_slap rs_galois_test liberasurecode_rs_vand_test
+noinst_PROGRAMS = test_xor_hd_code alg_sig_test liberasurecode_test libec_slap rs_galois_test liberasurecode_rs_vand_test libgpu_rscode_test
 
 test_xor_hd_code_SOURCES = \
 	builtin/xor_codes/test_xor_hd_code.c \
@@ -32,6 +32,11 @@ liberasurecode_rs_vand_test_SOURCES = builtin/rs_vand/liberasurecode_rs_vand_tes
 liberasurecode_rs_vand_test_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/include/rs_vand  @GCOV_FLAGS@
 liberasurecode_rs_vand_test_LDFLAGS = @GCOV_LDFLAGS@ -static-libtool-libs $(top_builddir)/src/builtin/rs_vand/liberasurecode_rs_vand.la
 check_PROGRAMS += liberasurecode_rs_vand_test
+
+libgpu_rscode_test_SOURCES = builtin/gpu_rscode/libgpu_rscode_test.c
+libgpu_rscode_test_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/include/gpu_rscode  @GCOV_FLAGS@
+libgpu_rscode_test_LDFLAGS = @GCOV_LDFLAGS@ $(top_builddir)/src/builtin/gpu_rscode/libgpu_rscode.la @CUDA_LIBS@
+check_PROGRAMS += libgpu_rscode_test
 
 MOSTLYCLEANFILES = *.gcda *.gcno *.gcov \
                    ./builtin/xor_codes/*.gcda ./builtin/xor_codes/*.gcno ./builtin/xor_codes/*.gcov \

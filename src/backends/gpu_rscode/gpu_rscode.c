@@ -1,5 +1,7 @@
 #include "erasurecode.h"
 #include "erasurecode_backend.h"
+#include "erasurecode_helpers.h"
+#include "erasurecode_helpers_ext.h"
 
 #define LIBGPU_RSCODE_LIB_MAJOR 1
 #define LIBGPU_RSCODE_LIB_MINOR 0
@@ -13,7 +15,7 @@
 #endif
 
 /* declarations */
-struct ec_backend_common backend_libgpu_rscode;
+struct ec_backend_common backend_gpu_rscode;
 
 typedef int (*libgpurscode_encode_func)(uint8_t *, char **, char **, int, int, int);
 typedef int (*libgpurscode_decode_func)(uint8_t *, char **, char **, int, int, int *, int);
@@ -43,6 +45,7 @@ static void * libgpu_rscode_init(struct ec_backend_args *args, void *backend_soh
 
     desc->k = args->uargs.k;
     desc->m = args->uargs.m;
+    desc->generator_matrix = NULL;
 
      /*
      * ISO C forbids casting a void* to a function pointer.
@@ -115,9 +118,8 @@ static int libgpu_rscode_encode(void *desc, char **data, char **parity,
 {
     struct libgpu_rscode_descriptor *gpurscode_desc =
         (struct libgpu_rscode_descriptor*)desc;
-    gpurscode_desc->encode(gpurscode_desc->generator_matrix, data, parity, 
+    return gpurscode_desc->encode(gpurscode_desc->generator_matrix, data, parity, 
         gpurscode_desc->k, gpurscode_desc->m, blocksize);
-    return 0;
 }
 
 static int libgpu_rscode_decode(void *desc, char **data, char **parity, 
@@ -125,7 +127,7 @@ static int libgpu_rscode_decode(void *desc, char **data, char **parity,
 {
     struct libgpu_rscode_descriptor *gpurscode_desc =
         (struct libgpu_rscode_descriptor*)desc;
-    gpurscode_desc->decode(gpurscode_desc->generator_matrix, data, parity, 
+    return gpurscode_desc->decode(gpurscode_desc->generator_matrix, data, parity, 
         gpurscode_desc->k, gpurscode_desc->m, missing_idxs, blocksize);
 }
 
@@ -134,7 +136,7 @@ static int libgpu_rscode_reconstruct(void *desc, char **data, char **parity,
 {
     struct libgpu_rscode_descriptor *gpurscode_desc =
         (struct libgpu_rscode_descriptor*)desc;
-    gpurscode_desc->reconstruct(gpurscode_desc->generator_matrix, data, parity, 
+    return gpurscode_desc->reconstruct(gpurscode_desc->generator_matrix, data, parity, 
         gpurscode_desc->k, gpurscode_desc->m, missing_idxs, destination_idx, blocksize);
 }
 
@@ -170,7 +172,7 @@ static int libgpu_rscode_element_size(void *desc) {
 }
 
 static bool libgpu_rscode_is_compatible_with(uint32_t version) {
-    return version == backend_liberasurecode_rs_vand.ec_backend_version;
+    return version == backend_gpu_rscode.ec_backend_version;
 }
 
 static struct ec_backend_op_stubs libgpu_rscode_op_stubs = {
@@ -187,7 +189,7 @@ static struct ec_backend_op_stubs libgpu_rscode_op_stubs = {
 };
 
 __attribute__ ((visibility ("internal")))
-struct ec_backend_common backend_liberasurecode_rs_vand = {
+struct ec_backend_common backend_gpu_rscode = {
     .id                         = EC_BACKEND_LIBERASURECODE_RS_VAND,
     .name                       = LIBGPU_RSCODE_LIB_NAME,
     .soname                     = LIBGPU_RSCODE_SO_NAME,

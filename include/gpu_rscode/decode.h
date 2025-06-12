@@ -18,7 +18,7 @@
 #ifndef _DECODE_H_
 #define _DECODE_H_
 
-
+#include <stdint.h>
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  decode_file

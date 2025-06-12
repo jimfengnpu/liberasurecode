@@ -125,12 +125,12 @@ if test x$debug = xtrue ; then
     DEBUG=1
     CXXFLAGS=""
     CFLAGS="-O0 -ggdb -g3 ${werror_flag} -D_GNU_SOURCE=1 -Wall -Wstrict-prototypes -pedantic -std=c99 ${CFLAGS}"
-    NVCCFLAGS="-G -g -O0 --ptxas-options=-v"
+    NVCCFLAGS="-G -g -O0"
 else
     DEBUG=0
     CXXFLAGS=""
     CFLAGS="-O2 -g ${werror_flag} -D_GNU_SOURCE=1 -Wall -Wstrict-prototypes -pedantic -std=c99 ${CFLAGS}"
-    NVCCFLAGS="-O3 -use_fast_math --ptxas-options=-v"
+    NVCCFLAGS="-O3 -use_fast_math"
 fi
 
 AC_ARG_ENABLE([gcov],
