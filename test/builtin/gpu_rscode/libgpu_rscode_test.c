@@ -30,6 +30,13 @@ int is_missing(int *missing_idxs, int index_to_check)
     return 0;
 }
 
+void print_data(const char *buff, size_t size) {
+    for(size_t i = 0; i < size; i++) {
+        printf("%02x ", (unsigned char)buff[i]);
+    }
+    puts("");
+}
+
 int test_encode_decode(uint8_t *matrix, int k, int m, int num_missing, int blocksize)
 {
     char **data = (char**)malloc(sizeof(char*)*k);
@@ -42,8 +49,10 @@ int test_encode_decode(uint8_t *matrix, int k, int m, int num_missing, int block
     
     srand((unsigned int)time(0));
         
+    printf("generate data\n");
     for (i = 0; i < k; i++) {
         data[i] = gen_random_buffer(blocksize);
+        print_data(data[i], blocksize);
     }
 
     for (i = 0; i < m; i++) {
@@ -58,6 +67,12 @@ int test_encode_decode(uint8_t *matrix, int k, int m, int num_missing, int block
     printf("encode start\n");
     libgpu_rscode_encode(matrix, data, parity, k, m, blocksize);
     printf("encode finish\n");
+    for(int i = 0; i < k; i++) {
+        print_data(data[i], blocksize);
+    }
+    for(int i = 0; i < m; i++) {
+        print_data(parity[i], blocksize);
+    }
     // Copy data and parity
     for (i = 0;i < num_missing; i++) {
         int idx = rand() % n;
@@ -68,6 +83,11 @@ int test_encode_decode(uint8_t *matrix, int k, int m, int num_missing, int block
         memcpy(missing_bufs[i], idx < k ? data[idx] : parity[idx - k], blocksize);
         missing[i] = idx;
     }
+    printf("emulate missing:");
+    for(i = 0; i < num_missing; i++) {
+        printf("%d ", missing[i]);
+    }
+    puts("");
     
     // Zero missing bufs
     for (i = 0;i < num_missing; i++) {
@@ -82,14 +102,19 @@ int test_encode_decode(uint8_t *matrix, int k, int m, int num_missing, int block
     printf("decode start\n");
     libgpu_rscode_decode(matrix, data, parity, k, m, missing, blocksize);
     printf("decode finish\n");
+    for(int i = 0; i < k; i++) {
+        print_data(data[i], blocksize);
+    }
+    puts("");
     for (i = 0; i < num_missing; i++) {
         int idx = missing[i];
         if (idx < k) { 
             if (memcmp(data[idx], missing_bufs[i], blocksize)) {
+                printf("idx:%d\n", idx);
+                print_data(data[idx], blocksize);
+                print_data(missing_bufs[i], blocksize);
                 ret = 0;
             }
-        } else if (memcmp(parity[idx - k], missing_bufs[i], blocksize)) {
-            ret = 0;
         }
     }
 
@@ -110,7 +135,7 @@ int test_encode_decode(uint8_t *matrix, int k, int m, int num_missing, int block
     return ret;
 }
 
-int matrix_dimensions[][2] = { {5, 3}, {-1, -1} };
+int matrix_dimensions[][2] = { {2, 1}, {2, 2}, {4, 1}, {8, 1}, {-1, -1} };
 
 int main(void) 
 {

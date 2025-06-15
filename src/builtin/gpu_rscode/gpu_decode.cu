@@ -253,7 +253,13 @@ void decode_data(uint8_t *generatorMatrix, uint8_t **data, uint8_t **parity, int
     {
         if(!missing[index]) {
             availableData[i] = (index < nativeBlockNum)? data[index]: parity[index - nativeBlockNum];
-            copy_matrix(generatorMatrix, encodingMatrix, index, i, nativeBlockNum);
+            if(index >= nativeBlockNum) {
+                copy_matrix(generatorMatrix, encodingMatrix, index - nativeBlockNum, i, nativeBlockNum);
+            } else {
+                for(int j = 0; j < nativeBlockNum; j++) {
+                    encodingMatrix[i*nativeBlockNum + j] = (j==index)? 1: 0;
+                }
+            }
             i++;
         }
     }
@@ -316,6 +322,7 @@ void decode_data(uint8_t *generatorMatrix, uint8_t **data, uint8_t **parity, int
 
         pthread_create(&((pthread_t*) threads)[i], NULL, GPU_thread_func, (void *) &thread_data[i]);
     }
+    // printf("debug\n");
 
     for (int i = 0; i < GPU_num; ++i)
     {

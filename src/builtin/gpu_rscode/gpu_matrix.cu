@@ -641,7 +641,7 @@ int get_pivot_index(uint8_t *vector, int index, int size)
  * =====================================================================================
  */
 // #define DEBUG
-#ifdef DEBUG
+// #ifdef DEBUG
 void show_square_matrix_debug(uint8_t *matrix, int size)
 {
     for (int i = 0; i < size; i++)
@@ -654,7 +654,7 @@ void show_square_matrix_debug(uint8_t *matrix, int size)
     }
     printf("\n");
 }
-#endif
+// #endif
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -793,7 +793,7 @@ __host__ float encode_chunk(unsigned char *dataChunk, unsigned char *parityCoeff
     checkCudaErrors(cudaEventCreate(&stepStart));
     checkCudaErrors(cudaEventCreate(&stepStop));
 
-    if (chunkSize % sizeof(AlignType) == 0)
+    if ( 0) //chunkSize % sizeof(AlignType) ==
     {
         int gridDimX = min((int) (ceil((float) chunkSize / sizeof(AlignType) / tileWidthCol)), gridDimXSize);
         dim3 grid(gridDimX, gridDimY);
@@ -802,6 +802,7 @@ __host__ float encode_chunk(unsigned char *dataChunk, unsigned char *parityCoeff
         size_t sMemSize = sMemMinSize;
 
         // record event
+        printf("debug: encode matrix mul %d %d %d tile:(%d, %d, %d)\n", nativeBlockNum, parityBlockNum, chunkSize, tileWidthRow, tileWidthCol, tileDepth);
         checkCudaErrors(cudaEventRecord(stepStart));
         matrix_mul<AlignType><<<grid, block, sMemSize, streamID>>>(parityCoeff, (AlignType *)dataChunk, (AlignType *)codeChunk, parityBlockNum, nativeBlockNum, (chunkSize / sizeof(AlignType)), tileWidthRow, tileWidthCol, tileDepth);
         // record event and synchronize
@@ -817,6 +818,7 @@ __host__ float encode_chunk(unsigned char *dataChunk, unsigned char *parityCoeff
         size_t sMemSize = sMemMinSize;
 
         // record event
+        // printf("debug: encode matrix mul %d %d %d tile:(%d, %d, %d)\n", nativeBlockNum, parityBlockNum, chunkSize, tileWidthRow, tileWidthCol, tileDepth);
         checkCudaErrors(cudaEventRecord(stepStart));
         matrix_mul<><<<grid, block, sMemSize, streamID>>>(parityCoeff, dataChunk, codeChunk, parityBlockNum, nativeBlockNum, chunkSize, tileWidthRow, tileWidthCol, tileDepth);
         // record event and synchronize
@@ -868,7 +870,7 @@ __host__ float decode_chunk(unsigned char *dataChunk, unsigned char *parityCoeff
     checkCudaErrors(cudaEventCreate(&stepStart));
     checkCudaErrors(cudaEventCreate(&stepStop));
 
-    if (chunkSize % sizeof(AlignType) == 0)
+    if ( 0) //chunkSize % sizeof(AlignType) ==
     {
         int gridDimX = min((int) (ceil((float) chunkSize / sizeof(AlignType) / tileWidthCol)), gridDimXSize);
         dim3 grid(gridDimX, gridDimY);
@@ -877,6 +879,7 @@ __host__ float decode_chunk(unsigned char *dataChunk, unsigned char *parityCoeff
         size_t sMemSize = sMemMinSize;
 
         // record event
+        printf("debug: decode matrix mul %d %d %d tile:(%d, %d, %d)\n", nativeBlockNum, parityBlockNum, chunkSize, tileWidthRow, tileWidthCol, tileDepth);
         checkCudaErrors(cudaEventRecord(stepStart));
         matrix_mul<AlignType><<<grid, block, sMemSize, streamID>>>(parityCoeff, (AlignType *) codeChunk, (AlignType *) dataChunk, nativeBlockNum, nativeBlockNum, (chunkSize / sizeof(AlignType)), tileWidthRow, tileWidthCol, tileDepth);
         // record event and synchronize

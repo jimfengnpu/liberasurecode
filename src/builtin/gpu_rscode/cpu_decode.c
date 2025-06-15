@@ -99,6 +99,20 @@ static inline uint8_t gf_div(uint8_t a, uint8_t b)
     return gfexp[diff_log];
 }
 
+void show_squre_matrix(uint8_t *matrix, int size)
+{
+    int i;
+    int j;
+    for(i=0; i<size; i++)
+    {
+        for(j=0; j<size; j++)
+        {
+            printf("%d ", matrix[i*size+j]);
+        }
+        printf("\n");
+    }
+}
+
 // switch rows if the current row is not the pivot row
 void switch_rows(uint8_t *matrix, uint8_t *result, int rowSrc, int rowDes, int size)
 {
@@ -132,7 +146,7 @@ void switch_columns(uint8_t *matrix, uint8_t *result, int colSrc, int colDes, in
 
         oldResultItem = result[ index(row, colSrc, size) ];
         result[ index(row, colSrc, size) ] = result[ index(row, colDes, size) ];
-        result[ index(row, colSrc, size) ] = oldResultItem; 
+        result[ index(row, colDes, size) ] = oldResultItem; 
     }
 } 
 
@@ -234,13 +248,13 @@ void get_identity_matrix(uint8_t *result, int size)
 }
 
 //find the pivot index in the given row/column
-int get_pivot_index(uint8_t *vector, int index, int size)
+int get_pivot_index(uint8_t *matrix, int index, int size)
 {
     int pivotIndex = -1;
     int i = index;
     while(pivotIndex == -1 && i < size)
     {
-        pivotIndex = (vector[i] > 0)? i: -1;        
+        pivotIndex = (matrix[ index(i, index, size)] > 0)? i: -1;        
         i++;
     }
     return pivotIndex;
@@ -252,8 +266,6 @@ void CPU_invert_matrix(uint8_t *matrix, uint8_t *result, int size)
 {
     int row;
     int pivotIndex;
-    uint8_t currentRow[size];
-    int currentRowSize = size * sizeof(uint8_t);
 
     setup_host_tables();
 
@@ -270,11 +282,10 @@ void CPU_invert_matrix(uint8_t *matrix, uint8_t *result, int size)
     {
         // check whether the leading coefficient of the current row is in the 'index'th column
         int index = row;
-        memcpy(&currentRow, matrix + row * size, currentRowSize);
-        pivotIndex = get_pivot_index(currentRow, index, size);
+        pivotIndex = get_pivot_index(matrix, index, size);
         if(pivotIndex != row)
         {
-            switch_columns(matrix, result, index, pivotIndex, size);
+            switch_rows(matrix, result, index, pivotIndex, size);
         }
 
         // Normalize the pivot row

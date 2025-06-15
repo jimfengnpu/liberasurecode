@@ -83,7 +83,7 @@ void encode(uint8_t *dataBuf, uint8_t *codeBuf, uint8_t *encodingMatrix, int id,
         checkCudaErrors(cudaMalloc((void **)&dataBuf_d[i], dataSize));
         checkCudaErrors(cudaMalloc((void **)&codeBuf_d[i], codeSize));
     }
-
+    // printf("debug:encode malloc ok\n");
     for (int i = 0; i < streamNum; i++)
     {
         int streamChunkSize = streamMinChunkSize;
@@ -99,7 +99,7 @@ void encode(uint8_t *dataBuf, uint8_t *codeBuf, uint8_t *encodingMatrix, int id,
                     cudaMemcpyHostToDevice,
                     stream[i]));
         }
-
+        // printf("debug:encode pre memcpy ok\n");
         encode_chunk(dataBuf_d[i], encodingMatrix_d, codeBuf_d[i], nativeBlockNum, parityBlockNum, streamChunkSize, gridDimXSize, stream[i]);
 
         for (int j = 0; j < parityBlockNum; j++)
@@ -110,6 +110,7 @@ void encode(uint8_t *dataBuf, uint8_t *codeBuf, uint8_t *encodingMatrix, int id,
                     cudaMemcpyDeviceToHost,
                     stream[i]));
         }
+        // printf("debug:encode post memcpy ok\n");
     }
 
     for (int i = 0; i < streamNum; i++)
@@ -134,7 +135,7 @@ static void* GPU_thread_func(void * args)
     pthread_barrier_wait(&barrier);
     clock_gettime(CLOCK_REALTIME, &start);
     pthread_barrier_wait(&barrier);
-
+    // printf("debug:encode start\n");
     encode(thread_data->dataBuf,
             thread_data->codeBuf,
             thread_data->encodingMatrix,
@@ -147,12 +148,12 @@ static void* GPU_thread_func(void * args)
 
     pthread_barrier_wait(&barrier);
     clock_gettime(CLOCK_REALTIME, &end);
-    if (thread_data->id == 0)
-    {
-        double totalTime = (double) (end.tv_sec - start.tv_sec) * 1000
-            + (double) (end.tv_nsec - start.tv_nsec) / (double) 1000000L;
-        printf("Total GPU encoding time using multiple devices: %fms\n", totalTime);
-    }
+    // if (thread_data->id == 0)
+    // {
+        // double totalTime = (double) (end.tv_sec - start.tv_sec) * 1000
+        //     + (double) (end.tv_nsec - start.tv_nsec) / (double) 1000000L;
+        // printf("Total GPU encoding time using multiple devices: %fms\n", totalTime);
+    // }
 
     // if (thread_data->id == 0)
     // {
@@ -195,10 +196,10 @@ void encode_data(uint8_t *generator_matrix, uint8_t **dataBuf, uint8_t **codeBuf
 
     uint8_t *dataBufPerDevice[GPU_num];
     uint8_t *codeBufPerDevice[GPU_num];
-    uint8_t *encodingMatrx;
-    size_t matrixSize = nativeBlockNum*parityBlockNum*sizeof(uint8_t);
-    checkCudaErrors(cudaMallocHost((void **)&encodingMatrx, matrixSize));
-    checkCudaErrors(cudaMemcpy(encodingMatrx, generator_matrix, matrixSize, cudaMemcpyHostToHost));
+    // uint8_t *encodingMatrx;
+    // size_t matrixSize = nativeBlockNum*parityBlockNum*sizeof(uint8_t);
+    // checkCudaErrors(cudaMallocHost((void **)&encodingMatrx, matrixSize));
+    // checkCudaErrors(cudaMemcpy(encodingMatrx, generator_matrix, matrixSize, cudaMemcpyHostToHost));
     pthread_barrier_init(&barrier, NULL, GPU_num);
 
     int minChunkSizePerDevice = chunkSize / GPU_num;
@@ -232,7 +233,7 @@ void encode_data(uint8_t *generator_matrix, uint8_t **dataBuf, uint8_t **codeBuf
         }
         thread_data[i].dataBuf = dataBufPerDevice[i];
         thread_data[i].codeBuf = codeBufPerDevice[i];
-        thread_data[i].encodingMatrix = encodingMatrx;
+        thread_data[i].encodingMatrix = generator_matrix;
 
         pthread_create(&((pthread_t*) threads)[i], NULL, GPU_thread_func, (void *) &thread_data[i]);
     }
@@ -264,7 +265,7 @@ void encode_data(uint8_t *generator_matrix, uint8_t **dataBuf, uint8_t **codeBuf
     }
 
     pthread_barrier_destroy(&barrier);
-    checkCudaErrors(cudaFreeHost(encodingMatrx));
+    // checkCudaErrors(cudaFreeHost(encodingMatrx));
     checkCudaErrors(cudaDeviceReset());
 
 }
